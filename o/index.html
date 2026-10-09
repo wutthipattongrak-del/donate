@@ -1,0 +1,32 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tikstudio</title>
+<style>html,body{margin:0;background:transparent;overflow:hidden}</style></head>
+<body>
+<script>
+// Tikstudio permanent overlay link. It never changes: it finds where the program is right now and opens the overlay there.
+(function () {
+  var q = new URLSearchParams(location.search), k = (q.get('k') || '').replace(/[^a-f0-9]/g, ''), p = q.get('p') || 'win', N = q.get('n') || 'https://ntfy.sh/';
+  if (!k) return;
+  if (/^[a-z]+:/i.test(p) || p.indexOf('//') >= 0) p = 'win';
+  var OK = /^(https:\/\/[a-z0-9-]+\.trycloudflare\.com|http:\/\/127\.0\.0\.1:\d+)$/i;
+  function latest() {
+    return fetch(N + 'tks-ov-' + k + '/json?poll=1&since=12h', { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (t) {
+      var u = ''; t.split('\n').forEach(function (l) { try { var j = JSON.parse(l); if (j.event === 'message' && OK.test(j.message)) u = j.message; } catch (e) {} });
+      return u;
+    });
+  }
+  function alive(u) { return fetch(u + '/ping', { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) { return t === 'ok'; }).catch(function () { return false; }); }
+  function go() {
+    latest().then(function (u) {
+      if (!u) return false;
+      return alive(u).then(function (ok) {
+        if (!ok) return false;
+        location.replace(u + '/' + p + (p.indexOf('?') >= 0 ? '&' : '?') + 'home=' + encodeURIComponent(location.href.split('#')[0]));
+        return true;
+      });
+    }).catch(function () { return false; }).then(function (done) { if (!done) setTimeout(go, 4000); });
+  }
+  go();
+})();
+</script>
+</body></html>
