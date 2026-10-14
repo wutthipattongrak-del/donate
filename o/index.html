@@ -16,16 +16,20 @@
     });
   }
   function alive(u) { return fetch(u + '/ping', { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) { return t === 'ok'; }).catch(function () { return false; }); }
+  var LS = 'tks-last-' + k, done = false;
+  function open(u) { if (done) return; done = true; try { localStorage.setItem(LS, u); } catch (e) {} location.replace(u + '/' + p + (p.indexOf('?') >= 0 ? '&' : '?') + 'home=' + encodeURIComponent(location.href.split('#')[0])); }
+  function fast() {   // the address that worked last time is tried at once (no waiting for the message service)
+    var u = ''; try { u = localStorage.getItem(LS) || ''; } catch (e) {}
+    if (u && OK.test(u)) alive(u).then(function (ok) { if (ok) open(u); });
+  }
   function go() {
+    if (done) return;
     latest().then(function (u) {
       if (!u) return false;
-      return alive(u).then(function (ok) {
-        if (!ok) return false;
-        location.replace(u + '/' + p + (p.indexOf('?') >= 0 ? '&' : '?') + 'home=' + encodeURIComponent(location.href.split('#')[0]));
-        return true;
-      });
-    }).catch(function () { return false; }).then(function (done) { if (!done) setTimeout(go, 4000); });
+      return alive(u).then(function (ok) { if (ok) open(u); return ok; });
+    }).catch(function () { return false; }).then(function (ok) { if (!ok && !done) setTimeout(go, 1500); });
   }
+  fast();
   go();
 })();
 </script>
